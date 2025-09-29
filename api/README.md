@@ -1,0 +1,1 @@
+API notes, endpoints y ejemplos. (placeholder)

@@ -1,0 +1,1 @@
+Sé respetuoso con contribuyentes. Reporta incumplimientos por email de maintainers.

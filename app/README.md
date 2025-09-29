@@ -1,0 +1,1 @@
+App: cómo ejecutar la aplicación Flask y conectar a la DB.

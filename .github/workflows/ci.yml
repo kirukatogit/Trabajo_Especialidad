@@ -1,0 +1,55 @@
+name: CI - Validate DB init
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  validate-init-sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Wait for postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres && break
+            sleep 1
+          done
+
+      - name: Apply db/init.sql
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d app_db -f db/init.sql
+
+      - name: Verify tenants count == 2
+        env:
+          PGPASSWORD: postgres
+        run: |
+          COUNT=$(psql -h localhost -U postgres -d app_db -t -c "SELECT count(*) FROM tenants;")
+          COUNT=$(echo "$COUNT" | tr -d '[:space:]')
+          echo "tenants count: $COUNT"
+          if [ "$COUNT" != "2" ]; then
+            echo "Expected 2 tenants, got $COUNT" >&2
+            exit 1
+          fi

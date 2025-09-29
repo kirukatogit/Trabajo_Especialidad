@@ -1,0 +1,1 @@
+Contribuciones: abre PR contra main, incluye descripción y checklist de cambios.
