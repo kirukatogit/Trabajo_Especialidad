@@ -1,1 +1,0 @@
-One-pager: resumen del proyecto (plantilla).

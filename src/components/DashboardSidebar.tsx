@@ -1,12 +1,9 @@
-import { useState } from "react"
-import { NavLink, useLocation } from "react-router-dom"
+import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { useAuth } from "@/hooks/useAuth"
 import { 
   Home, 
+  User,
   Building2, 
-  Package, 
-  Users, 
-  BarChart3, 
-  Settings, 
   LogOut,
   ChevronLeft,
   ChevronRight
@@ -28,18 +25,21 @@ import { Button } from "@/components/ui/button"
 
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Sucursales", url: "/branches", icon: Building2 },
-  { title: "Inventario", url: "/inventory", icon: Package },
-  { title: "Equipo", url: "/team", icon: Users },
-  { title: "Reportes", url: "/reports", icon: BarChart3 },
-  { title: "Configuración", url: "/settings", icon: Settings },
+  { title: "Mi Perfil", url: "/profile", icon: User },
 ]
 
 const DashboardSidebar = () => {
+  const { signOut } = useAuth()
+  const navigate = useNavigate()
   const { state, toggleSidebar } = useSidebar()
   const location = useLocation()
   const currentPath = location.pathname
   const collapsed = state === "collapsed"
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/auth')
+  }
 
   const isActive = (path: string) => currentPath === path
   const hasActiveRoute = navigationItems.some((item) => isActive(item.url))
@@ -104,7 +104,10 @@ const DashboardSidebar = () => {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <button className="flex items-center gap-3 px-3 py-2 rounded-lg text-destructive hover:bg-destructive/10 transition-all duration-200 w-full">
+                <button 
+                  onClick={handleSignOut}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-destructive hover:bg-destructive/10 transition-all duration-200 w-full"
+                >
                   <LogOut className="h-5 w-5" />
                   {!collapsed && <span>Cerrar Sesión</span>}
                 </button>

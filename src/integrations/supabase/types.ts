@@ -14,13 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      branches: {
+        Row: {
+          address: string
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branches_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          email: string | null
+          hire_date: string | null
+          id: string
+          name: string
+          phone: string | null
+          position: string
+          salary: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          email?: string | null
+          hire_date?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          position: string
+          salary?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          email?: string | null
+          hire_date?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          position?: string
+          salary?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory: {
+        Row: {
+          branch_id: string
+          category: string | null
+          created_at: string | null
+          id: string
+          min_stock: number | null
+          product_name: string
+          quantity: number | null
+          sku: string | null
+          unit_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          branch_id: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          min_stock?: number | null
+          product_name: string
+          quantity?: number | null
+          sku?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          branch_id?: string
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          min_stock?: number | null
+          product_name?: string
+          quantity?: number | null
+          sku?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_employee_branch: {
+        Args: { _user_id: string }
+        Returns: string
+      }
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: string
+      }
+      is_branch_employee: {
+        Args: { _branch_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_branch_owner: {
+        Args: { _branch_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
