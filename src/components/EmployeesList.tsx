@@ -1,17 +1,16 @@
 // @ts-nocheck
-import { useState, useEffect } from 'react'
-import { supabase } from '@/integrations/supabase/client'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Mail, Phone, DollarSign, Calendar, User, Briefcase } from 'lucide-react'
-import { z } from 'zod'
-
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Plus, Mail, Phone, DollarSign, Calendar, User, Briefcase } from 'lucide-react';
+import { z } from 'zod';
 const employeeSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
@@ -19,30 +18,31 @@ const employeeSchema = z.object({
   position: z.string().min(2, 'La posición debe tener al menos 2 caracteres').max(100),
   salary: z.number().positive('El salario debe ser positivo').optional(),
   hire_date: z.string().optional(),
-  status: z.enum(['active', 'inactive', 'vacation']),
-})
-
+  status: z.enum(['active', 'inactive', 'vacation'])
+});
 interface Employee {
-  id: string
-  name: string
-  email: string | null
-  phone: string | null
-  position: string
-  salary: number | null
-  hire_date: string | null
-  status: string
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  position: string;
+  salary: number | null;
+  hire_date: string | null;
+  status: string;
 }
-
 interface EmployeesListProps {
-  branchId: string
+  branchId: string;
 }
-
-const EmployeesList = ({ branchId }: EmployeesListProps) => {
-  const { toast } = useToast()
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [open, setOpen] = useState(false)
+const EmployeesList = ({
+  branchId
+}: EmployeesListProps) => {
+  const {
+    toast
+  } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -52,57 +52,49 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
     hire_date: new Date().toISOString().split('T')[0],
     status: 'active',
     createAccount: false,
-    password: '',
-  })
-
+    password: ''
+  });
   useEffect(() => {
-    fetchEmployees()
-  }, [branchId])
-
+    fetchEmployees();
+  }, [branchId]);
   const fetchEmployees = async () => {
     try {
       // @ts-ignore - Supabase types need to be regenerated
-      const { data, error } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('branch_id', branchId)
-        .order('name')
-
-      if (error) throw error
-      setEmployees(data || [])
+      const {
+        data,
+        error
+      } = await supabase.from('employees').select('*').eq('branch_id', branchId).order('name');
+      if (error) throw error;
+      setEmployees(data || []);
     } catch (error) {
-      console.error('Error fetching employees:', error)
+      console.error('Error fetching employees:', error);
       toast({
         title: 'Error',
         description: 'No se pudo cargar el personal',
-        variant: 'destructive',
-      })
+        variant: 'destructive'
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
+  };
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+    e.preventDefault();
     if (formData.createAccount && !formData.email) {
       toast({
         title: 'Error',
         description: 'Se requiere email para crear cuenta de usuario',
-        variant: 'destructive',
-      })
-      return
+        variant: 'destructive'
+      });
+      return;
     }
-
     if (formData.createAccount && !formData.password) {
       toast({
         title: 'Error',
         description: 'Se requiere contraseña para crear cuenta de usuario',
-        variant: 'destructive',
-      })
-      return
+        variant: 'destructive'
+      });
+      return;
     }
-
     const payload = {
       name: formData.name,
       email: formData.email || null,
@@ -110,29 +102,30 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
       position: formData.position,
       salary: formData.salary ? parseFloat(formData.salary) : null,
       hire_date: formData.hire_date,
-      status: formData.status,
-    }
-
+      status: formData.status
+    };
     try {
-      employeeSchema.parse(payload)
+      employeeSchema.parse(payload);
     } catch (error: any) {
       if (error?.errors) {
         toast({
           title: 'Error de validación',
           description: error.errors[0]?.message || 'Error de validación',
-          variant: 'destructive',
-        })
-        return
+          variant: 'destructive'
+        });
+        return;
       }
     }
-
-    setSaving(true)
+    setSaving(true);
     try {
-      let userId = null
+      let userId = null;
 
       // Si se debe crear cuenta, primero crear usuario en auth
       if (formData.createAccount && formData.email && formData.password) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const {
+          data: authData,
+          error: authError
+        } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -141,42 +134,35 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
               role: 'employee'
             }
           }
-        })
-
+        });
         if (authError) {
-          throw new Error('Error creando cuenta: ' + authError.message)
+          throw new Error('Error creando cuenta: ' + authError.message);
         }
-
-        userId = authData.user?.id
+        userId = authData.user?.id;
 
         // Actualizar perfil con role employee
         if (userId) {
-          await supabase
-            .from('profiles')
-            .update({ role: 'employee', full_name: formData.name })
-            .eq('id', userId)
+          await supabase.from('profiles').update({
+            role: 'employee',
+            full_name: formData.name
+          }).eq('id', userId);
         }
       }
 
       // @ts-ignore - Supabase types need to be regenerated
-      const { error } = await supabase
-        .from('employees')
-        .insert({
-          ...payload,
-          branch_id: branchId,
-          user_id: userId,
-        })
-
-      if (error) throw error
-
+      const {
+        error
+      } = await supabase.from('employees').insert({
+        ...payload,
+        branch_id: branchId,
+        user_id: userId
+      });
+      if (error) throw error;
       toast({
         title: 'Empleado agregado',
-        description: formData.createAccount 
-          ? 'El empleado ha sido agregado y puede iniciar sesión con su correo'
-          : 'El empleado ha sido agregado exitosamente',
-      })
-      
-      setOpen(false)
+        description: formData.createAccount ? 'El empleado ha sido agregado y puede iniciar sesión con su correo' : 'El empleado ha sido agregado exitosamente'
+      });
+      setOpen(false);
       setFormData({
         name: '',
         email: '',
@@ -186,49 +172,50 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
         hire_date: new Date().toISOString().split('T')[0],
         status: 'active',
         createAccount: false,
-        password: '',
-      })
-      fetchEmployees()
+        password: ''
+      });
+      fetchEmployees();
     } catch (error: any) {
-      console.error('Error adding employee:', error)
+      console.error('Error adding employee:', error);
       toast({
         title: 'Error',
         description: error.message || 'No se pudo agregar el empleado',
-        variant: 'destructive',
-      })
+        variant: 'destructive'
+      });
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
-
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-700'
-      case 'vacation': return 'bg-blue-100 text-blue-700'
-      case 'inactive': return 'bg-gray-100 text-gray-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case 'active':
+        return 'bg-green-100 text-green-700';
+      case 'vacation':
+        return 'bg-blue-100 text-blue-700';
+      case 'inactive':
+        return 'bg-gray-100 text-gray-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
     }
-  }
-
+  };
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active': return 'Activo'
-      case 'vacation': return 'Vacaciones'
-      case 'inactive': return 'Inactivo'
-      default: return status
+      case 'active':
+        return 'Activo';
+      case 'vacation':
+        return 'Vacaciones';
+      case 'inactive':
+        return 'Inactivo';
+      default:
+        return status;
     }
-  }
-
+  };
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
+    return <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
+      </div>;
   }
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Personal ({employees.length})</h2>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -251,41 +238,38 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
                   <Label htmlFor="name">Nombre Completo *</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="pl-10"
-                      required
-                    />
+                    <Input id="name" value={formData.name} onChange={e => setFormData({
+                    ...formData,
+                    name: e.target.value
+                  })} className="pl-10" required />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="position">Posición *</Label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="position"
-                      value={formData.position}
-                      onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <Select value={formData.position} onValueChange={value => setFormData({
+                  ...formData,
+                  position: value
+                })} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar posición" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gerente">Gerente</SelectItem>
+                      <SelectItem value="empleado">Empleado</SelectItem>
+                      <SelectItem value="pasante">Pasante</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="pl-10"
-                    />
+                    <Input id="email" type="email" value={formData.email} onChange={e => setFormData({
+                    ...formData,
+                    email: e.target.value
+                  })} className="pl-10" />
                   </div>
                 </div>
 
@@ -293,28 +277,21 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
                   <Label htmlFor="phone">Teléfono</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="pl-10"
-                    />
+                    <Input id="phone" type="tel" value={formData.phone} onChange={e => setFormData({
+                    ...formData,
+                    phone: e.target.value
+                  })} className="pl-10" />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="salary">Salario (₡)</Label>
+                  <Label htmlFor="salary">Salario ($)</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="salary"
-                      type="number"
-                      step="0.01"
-                      value={formData.salary}
-                      onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                      className="pl-10"
-                    />
+                    <Input id="salary" type="number" step="0.01" value={formData.salary} onChange={e => setFormData({
+                    ...formData,
+                    salary: e.target.value
+                  })} className="pl-10" />
                   </div>
                 </div>
 
@@ -322,22 +299,19 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
                   <Label htmlFor="hire_date">Fecha de Contratación</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="hire_date"
-                      type="date"
-                      value={formData.hire_date}
-                      onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
-                      className="pl-10"
-                    />
+                    <Input id="hire_date" type="date" value={formData.hire_date} onChange={e => setFormData({
+                    ...formData,
+                    hire_date: e.target.value
+                  })} className="pl-10" />
                   </div>
                 </div>
 
                 <div className="space-y-2 col-span-2">
                   <Label htmlFor="status">Estado</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
-                  >
+                  <Select value={formData.status} onValueChange={value => setFormData({
+                  ...formData,
+                  status: value
+                })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -352,43 +326,30 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
 
               <div className="border-t pt-4 space-y-4">
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="createAccount"
-                    checked={formData.createAccount}
-                    onChange={(e) => setFormData({ ...formData, createAccount: e.target.checked })}
-                    className="rounded"
-                  />
+                  <input type="checkbox" id="createAccount" checked={formData.createAccount} onChange={e => setFormData({
+                  ...formData,
+                  createAccount: e.target.checked
+                })} className="rounded" />
                   <Label htmlFor="createAccount">Crear cuenta de usuario para este empleado</Label>
                 </div>
 
-                {formData.createAccount && (
-                  <div className="space-y-2">
+                {formData.createAccount && <div className="space-y-2">
                     <Label htmlFor="password">Contraseña</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Contraseña para iniciar sesión"
-                      required={formData.createAccount}
-                    />
+                    <Input id="password" type="password" value={formData.password} onChange={e => setFormData({
+                  ...formData,
+                  password: e.target.value
+                })} placeholder="Contraseña para iniciar sesión" required={formData.createAccount} />
                     <p className="text-xs text-muted-foreground">
                       El empleado podrá iniciar sesión con su correo y esta contraseña
                     </p>
-                  </div>
-                )}
+                  </div>}
               </div>
 
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-gradient-primary text-secondary"
-                  disabled={saving}
-                >
+                <Button type="submit" className="bg-gradient-primary text-secondary" disabled={saving}>
                   {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Guardar
                 </Button>
@@ -398,14 +359,10 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
         </Dialog>
       </div>
 
-      {employees.length === 0 ? (
-        <Card className="p-12 text-center">
+      {employees.length === 0 ? <Card className="p-12 text-center">
           <p className="text-muted-foreground">No hay empleados registrados en esta sucursal</p>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {employees.map((employee) => (
-            <Card key={employee.id} className="p-6 hover:shadow-hive transition-shadow">
+        </Card> : <div className="grid gap-4">
+          {employees.map(employee => <Card key={employee.id} className="p-6 hover:shadow-hive transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
@@ -416,39 +373,27 @@ const EmployeesList = ({ branchId }: EmployeesListProps) => {
                   </div>
                   <p className="text-muted-foreground">{employee.position}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    {employee.email && (
-                      <span className="flex items-center gap-1">
+                    {employee.email && <span className="flex items-center gap-1">
                         <Mail className="h-4 w-4" />
                         {employee.email}
-                      </span>
-                    )}
-                    {employee.phone && (
-                      <span className="flex items-center gap-1">
+                      </span>}
+                    {employee.phone && <span className="flex items-center gap-1">
                         <Phone className="h-4 w-4" />
                         {employee.phone}
-                      </span>
-                    )}
-                    {employee.salary && (
-                      <span className="flex items-center gap-1">
+                      </span>}
+                    {employee.salary && <span className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4" />
                         ₡{employee.salary.toLocaleString()}
-                      </span>
-                    )}
-                    {employee.hire_date && (
-                      <span className="flex items-center gap-1">
+                      </span>}
+                    {employee.hire_date && <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         {new Date(employee.hire_date).toLocaleDateString()}
-                      </span>
-                    )}
+                      </span>}
                   </div>
                 </div>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-export default EmployeesList
+            </Card>)}
+        </div>}
+    </div>;
+};
+export default EmployeesList;

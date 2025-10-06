@@ -7,10 +7,12 @@ import UserInfo from "@/components/UserInfo"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
-import { Building2, Users, Package, Loader2, Plus, MapPin, Phone } from "lucide-react"
+import { Building2, Users, Package, Loader2, Plus, MapPin, Phone, MoreVertical, XCircle, PlayCircle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -51,6 +53,8 @@ const Dashboard = () => {
     totalInventory: 0,
   })
   const [open, setOpen] = useState(false)
+  const [closeBranchDialog, setCloseBranchDialog] = useState<string | null>(null)
+  const [showInactive, setShowInactive] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -225,6 +229,60 @@ const Dashboard = () => {
     }
   }
 
+  const handleCloseBranch = async (branchId: string) => {
+    try {
+      // @ts-ignore
+      const { error } = await supabase
+        .from('branches')
+        .update({ status: 'inactive' })
+        .eq('id', branchId)
+
+      if (error) throw error
+
+      toast({
+        title: 'Sucursal cerrada',
+        description: 'La sucursal ha sido marcada como inactiva',
+      })
+
+      fetchDashboardData()
+    } catch (error) {
+      console.error('Error closing branch:', error)
+      toast({
+        title: 'Error',
+        description: 'No se pudo cerrar la sucursal',
+        variant: 'destructive',
+      })
+    } finally {
+      setCloseBranchDialog(null)
+    }
+  }
+
+  const handleReactivateBranch = async (branchId: string) => {
+    try {
+      // @ts-ignore
+      const { error } = await supabase
+        .from('branches')
+        .update({ status: 'active' })
+        .eq('id', branchId)
+
+      if (error) throw error
+
+      toast({
+        title: 'Sucursal reactivada',
+        description: 'La sucursal ha sido reactivada exitosamente',
+      })
+
+      fetchDashboardData()
+    } catch (error) {
+      console.error('Error reactivating branch:', error)
+      toast({
+        title: 'Error',
+        description: 'No se pudo reactivar la sucursal',
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <SidebarProvider>
@@ -302,10 +360,24 @@ const Dashboard = () => {
               {/* Branches Section */}
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-foreground flex items-center gap-2">
-                    <Building2 className="h-6 w-6" />
-                    Mis Sucursales
-                  </h2>
+                  <div>
+                    <h2 className="text-2xl font-semibold text-foreground flex items-center gap-2">
+                      <Building2 className="h-6 w-6" />
+                      Mis Sucursales
+                    </h2>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="checkbox"
+                        id="showInactive"
+                        checked={showInactive}
+                        onChange={(e) => setShowInactive(e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor="showInactive" className="text-sm text-muted-foreground cursor-pointer">
+                        Mostrar sucursales inactivas
+                      </Label>
+                    </div>
+                  </div>
                   <Dialog open={open} onOpenChange={setOpen}>
                     <DialogTrigger asChild>
                       <Button className="bg-gradient-primary text-secondary hover:shadow-hive">
@@ -406,18 +478,56 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {branches.map((branch) => (
+                    {branches
+                      .filter(branch => showInactive || branch.status !== 'inactive')
+                      .map((branch) => (
                       <Card 
                         key={branch.id} 
-                        className="p-6 hover:shadow-hive transition-all cursor-pointer"
+                        className="p-6 hover:shadow-hive transition-all relative group cursor-pointer"
                         onClick={() => navigate(`/branch/${branch.id}`)}
                       >
                         <div className="space-y-4">
                           <div className="flex items-start justify-between">
-                            <h3 className="text-lg font-semibold text-foreground">{branch.name}</h3>
-                            <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(branch.status)}`}>
-                              {getStatusText(branch.status)}
-                            </span>
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {branch.name}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(branch.status)}`}>
+                                {getStatusText(branch.status)}
+                              </span>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {branch.status === 'inactive' ? (
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleReactivateBranch(branch.id)
+                                      }}
+                                      className="text-green-600"
+                                    >
+                                      <PlayCircle className="h-4 w-4 mr-2" />
+                                      Reactivar Sucursal
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem 
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setCloseBranchDialog(branch.id)
+                                      }}
+                                      className="text-destructive"
+                                    >
+                                      <XCircle className="h-4 w-4 mr-2" />
+                                      Cerrar Sucursal
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                           
                           <div className="space-y-2 text-sm text-muted-foreground">
@@ -452,6 +562,28 @@ const Dashboard = () => {
             </div>
           </main>
         </div>
+
+        {/* Dialog de confirmación para cerrar sucursal */}
+        <AlertDialog open={!!closeBranchDialog} onOpenChange={() => setCloseBranchDialog(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Cerrar sucursal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción marcará la sucursal como inactiva. No se eliminará de la base de datos
+                y podrás reactivarla en cualquier momento. Los empleados e inventario se mantendrán intactos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => closeBranchDialog && handleCloseBranch(closeBranchDialog)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Cerrar Sucursal
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </SidebarProvider>
   )
