@@ -31,9 +31,11 @@ interface InventoryItem {
 
 interface InventoryListProps {
   branchId: string
+  userRole?: string
 }
 
-const InventoryList = ({ branchId }: InventoryListProps) => {
+const InventoryList = ({ branchId, userRole = 'admin' }: InventoryListProps) => {
+  const canEdit = userRole === 'admin' || userRole === 'gerente'
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -391,32 +393,37 @@ const InventoryList = ({ branchId }: InventoryListProps) => {
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Exportar
           </Button>
-          <Button
-            variant="outline"
-            disabled={importing}
-            onClick={() => document.getElementById('csv-upload')?.click()}
-          >
-            {importing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-2" />
-            )}
-            Importar
-          </Button>
-          <input
-            id="csv-upload"
-            type="file"
-            accept=".csv"
-            onChange={handleImportCSV}
-            className="hidden"
-          />
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-primary text-secondary hover:shadow-hive">
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Producto
+          {canEdit && (
+            <>
+              <Button
+                variant="outline"
+                disabled={importing}
+                onClick={() => document.getElementById('csv-upload')?.click()}
+              >
+                {importing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-2" />
+                )}
+                Importar
               </Button>
-            </DialogTrigger>
+              <input
+                id="csv-upload"
+                type="file"
+                accept=".csv"
+                onChange={handleImportCSV}
+                className="hidden"
+              />
+            </>
+          )}
+          {canEdit && (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-primary text-secondary hover:shadow-hive">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Producto
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Agregar Nuevo Producto</DialogTitle>
@@ -574,8 +581,9 @@ const InventoryList = ({ branchId }: InventoryListProps) => {
                 </Button>
               </div>
             </form>
-          </DialogContent>
+            </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -635,35 +643,41 @@ const InventoryList = ({ branchId }: InventoryListProps) => {
                   </div>
                 </div>
                 <div className="text-right space-y-2">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-8 w-8"
-                      onClick={() => updateQuantity(item.id, item.quantity, -1)}
-                      disabled={item.quantity === 0}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <div 
-                      className="text-2xl font-bold text-foreground min-w-[60px] cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => {
-                        setSelectedItem(item)
-                        setAdjustDialogOpen(true)
-                      }}
-                      title="Click para ajustar cantidad"
-                    >
-                      {item.quantity}
+                  {canEdit ? (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8"
+                        onClick={() => updateQuantity(item.id, item.quantity, -1)}
+                        disabled={item.quantity === 0}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <div 
+                        className="text-2xl font-bold text-foreground min-w-[60px] cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => {
+                          setSelectedItem(item)
+                          setAdjustDialogOpen(true)
+                        }}
+                        title="Click para ajustar cantidad"
+                      >
+                        {item.quantity}
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8"
+                        onClick={() => updateQuantity(item.id, item.quantity, 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-8 w-8"
-                      onClick={() => updateQuantity(item.id, item.quantity, 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="text-2xl font-bold text-foreground">
+                      Cantidad: {item.quantity}
+                    </div>
+                  )}
                   <div className="text-sm text-muted-foreground">unidades</div>
                   {item.unit_price && (
                     <div className="text-sm text-muted-foreground">

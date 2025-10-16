@@ -86,9 +86,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     })
     
     if (error) {
+      let errorMessage = error.message
+      
+      // Traducir errores comunes
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = 'Email o contraseña incorrectos. Si eres un empleado nuevo, verifica tu email primero.'
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = 'Debes confirmar tu email antes de iniciar sesión. Revisa tu bandeja de entrada.'
+      }
+      
       toast({
         title: "Error de inicio de sesión",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive"
       })
     }

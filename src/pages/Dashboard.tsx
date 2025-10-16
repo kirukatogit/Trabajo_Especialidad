@@ -70,15 +70,22 @@ const Dashboard = () => {
 
   const checkUserRole = async () => {
     try {
+      // Obtener roles del usuario desde user_roles
       // @ts-ignore
-      const { data: profile } = await supabase
-        .from('profiles')
+      const { data: userRoles } = await supabase
+        .from('user_roles')
         .select('role')
-        .eq('id', user?.id)
-        .single()
+        .eq('user_id', user?.id)
 
-      // Si es empleado, redirigir a su sucursal
-      if (profile?.role === 'employee') {
+      if (!userRoles || userRoles.length === 0) {
+        fetchDashboardData()
+        return
+      }
+
+      const roles = userRoles.map(r => r.role)
+
+      // Si es gerente, empleado o pasante, redirigir a su sucursal
+      if (roles.includes('gerente') || roles.includes('empleado') || roles.includes('pasante')) {
         // @ts-ignore
         const { data: employee } = await supabase
           .from('employees')

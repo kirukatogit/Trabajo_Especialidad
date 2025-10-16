@@ -14,7 +14,7 @@ import { z } from 'zod';
 const employeeSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().max(20).optional(),
+  phone: z.string().regex(/^[0-9+\s()-]*$/, 'El teléfono solo puede contener números y el símbolo +').max(20).optional(),
   position: z.string().min(2, 'La posición debe tener al menos 2 caracteres').max(100),
   salary: z.number().positive('El salario debe ser positivo').optional(),
   hire_date: z.string().optional(),
@@ -32,10 +32,13 @@ interface Employee {
 }
 interface EmployeesListProps {
   branchId: string;
+  userRole?: string;
 }
 const EmployeesList = ({
-  branchId
+  branchId,
+  userRole = 'admin'
 }: EmployeesListProps) => {
+  const canEdit = userRole === 'admin' || userRole === 'gerente';
   const {
     toast
   } = useToast();
@@ -130,8 +133,7 @@ const EmployeesList = ({
           password: formData.password,
           options: {
             data: {
-              full_name: formData.name,
-              role: 'employee'
+              full_name: formData.name
             }
           }
         });
@@ -140,12 +142,20 @@ const EmployeesList = ({
         }
         userId = authData.user?.id;
 
-        // Actualizar perfil con role employee
+        // Asignar rol según la posición en user_roles
         if (userId) {
-          await supabase.from('profiles').update({
-            role: 'employee',
-            full_name: formData.name
-          }).eq('id', userId);
+          let roleToAssign: 'gerente' | 'empleado' | 'pasante' = 'empleado';
+          
+          if (formData.position === 'gerente') {
+            roleToAssign = 'gerente';
+          } else if (formData.position === 'pasante') {
+            roleToAssign = 'pasante';
+          }
+
+          await supabase.from('user_roles').insert({
+            user_id: userId,
+            role: roleToAssign
+          });
         }
       }
 
@@ -218,13 +228,14 @@ const EmployeesList = ({
   return <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Personal ({employees.length})</h2>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary text-secondary hover:shadow-hive">
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Empleado
-            </Button>
-          </DialogTrigger>
+        {canEdit && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-primary text-secondary hover:shadow-hive">
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Empleado
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Agregar Nuevo Empleado</DialogTitle>
@@ -357,6 +368,7 @@ const EmployeesList = ({
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {employees.length === 0 ? <Card className="p-12 text-center">

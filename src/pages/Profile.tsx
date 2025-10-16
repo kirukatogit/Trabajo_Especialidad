@@ -10,13 +10,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, User, Building2, Phone, Mail } from 'lucide-react'
+import { Loader2, User, Building2, Phone, Mail, Lock } from 'lucide-react'
 import { z } from 'zod'
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
   company_name: z.string().min(2, 'El nombre de la empresa debe tener al menos 2 caracteres').max(100),
-  phone: z.string().optional(),
+  phone: z.string().regex(/^[0-9+\s()-]*$/, 'El teléfono solo puede contener números y el símbolo +').optional(),
 })
 
 type ProfileData = z.infer<typeof profileSchema>
@@ -27,10 +27,15 @@ const Profile = () => {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
   const [profile, setProfile] = useState<ProfileData>({
     full_name: '',
     company_name: '',
     phone: '',
+  })
+  const [passwordData, setPasswordData] = useState({
+    newPassword: '',
+    confirmPassword: '',
   })
 
   useEffect(() => {
@@ -115,6 +120,53 @@ const Profile = () => {
       })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'Las contraseñas no coinciden',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      toast({
+        title: 'Error',
+        description: 'La contraseña debe tener al menos 8 caracteres',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      })
+
+      if (error) throw error
+
+      toast({
+        title: 'Contraseña actualizada',
+        description: 'Tu contraseña ha sido cambiada exitosamente',
+      })
+      
+      setPasswordData({ newPassword: '', confirmPassword: '' })
+    } catch (error: any) {
+      console.error('Error changing password:', error)
+      toast({
+        title: 'Error',
+        description: error.message || 'No se pudo cambiar la contraseña',
+        variant: 'destructive',
+      })
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -230,6 +282,72 @@ const Profile = () => {
                           onClick={() => navigate('/dashboard')}
                         >
                           Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!loading && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Lock className="h-5 w-5" />
+                      Cambiar Contraseña
+                    </CardTitle>
+                    <CardDescription>
+                      Actualiza tu contraseña de acceso
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handlePasswordChange} className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">Nueva Contraseña *</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="newPassword"
+                            type="password"
+                            value={passwordData.newPassword}
+                            onChange={(e) =>
+                              setPasswordData({ ...passwordData, newPassword: e.target.value })
+                            }
+                            className="pl-10"
+                            required
+                            minLength={8}
+                            placeholder="Mínimo 8 caracteres"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirmar Contraseña *</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) =>
+                              setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                            }
+                            className="pl-10"
+                            required
+                            minLength={8}
+                            placeholder="Repite la nueva contraseña"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <Button
+                          type="submit"
+                          className="bg-gradient-primary text-secondary hover:shadow-hive"
+                          disabled={changingPassword}
+                        >
+                          {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Cambiar Contraseña
                         </Button>
                       </div>
                     </form>
