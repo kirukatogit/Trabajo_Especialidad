@@ -1,4 +1,4 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
 import { 
   Home, 
@@ -6,7 +6,8 @@ import {
   Building2, 
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from "lucide-react"
 
 import {
@@ -26,11 +27,11 @@ import { Button } from "@/components/ui/button"
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Mi Perfil", url: "/profile", icon: User },
+  { title: "Logs de Auditoría", url: "/audit-logs", icon: FileText },
 ]
 
 const DashboardSidebar = () => {
   const { signOut } = useAuth()
-  const navigate = useNavigate()
   const { state, toggleSidebar } = useSidebar()
   const location = useLocation()
   const currentPath = location.pathname
@@ -38,7 +39,6 @@ const DashboardSidebar = () => {
 
   const handleSignOut = async () => {
     await signOut()
-    navigate('/auth')
   }
 
   const isActive = (path: string) => currentPath === path

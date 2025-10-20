@@ -1,208 +1,162 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useNavigate, Link } from 'react-router-dom'
+import { supabase } from '@/integrations/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAuth } from '@/hooks/useAuth'
-import { Loader2 } from 'lucide-react'
-
-const authSchema = z.object({
-  email: z.string().trim().email({ message: "Ingresa un email válido" }),
-  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" })
-})
-
-type AuthForm = z.infer<typeof authSchema>
+import { useToast } from '@/hooks/use-toast'
+import { Loader2, Mail, Lock, ArrowLeft } from 'lucide-react'
 
 const Auth = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const { signIn, signUp, user } = useAuth()
+  const [isLogin, setIsLogin] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const { user } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
 
-  const form = useForm<AuthForm>({
-    resolver: zodResolver(authSchema),
-    defaultValues: {
-      email: '',
-      password: ''
-    }
-  })
-
-  // Redirect if already authenticated
+  // Si el usuario ya está autenticado, redirigir al dashboard
   useEffect(() => {
     if (user) {
       navigate('/dashboard')
     }
   }, [user, navigate])
 
-  const handleSignIn = async (data: AuthForm) => {
-    setIsLoading(true)
-    const { error } = await signIn(data.email, data.password)
-    if (!error) {
-      navigate('/dashboard')
-    }
-    setIsLoading(false)
-  }
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
 
-  const handleSignUp = async (data: AuthForm) => {
-    setIsLoading(true)
-    const { error } = await signUp(data.email, data.password)
-    setIsLoading(false)
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (error) throw error
+
+        toast({
+          title: 'Bienvenido',
+          description: 'Has iniciado sesión exitosamente',
+        })
+        
+        navigate('/dashboard')
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        })
+
+        if (error) throw error
+
+        toast({
+          title: 'Registro exitoso',
+          description: 'Se ha enviado un correo de confirmación a tu email',
+        })
+      }
+    } catch (error: any) {
+      console.error('Auth error:', error)
+      toast({
+        title: 'Error',
+        description: error.message || 'Ocurrió un error durante la autenticación',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-hive p-4">
+    <div className="min-h-screen bg-gradient-to-br from-beeswax to-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-2xl mb-4 shadow-hive">
-            <span className="text-3xl">🐝</span>
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">BizHive</h1>
-          <p className="text-muted-foreground mt-2">Tu colmena de negocios</p>
-        </div>
-
-        <Card className="shadow-honey border-border/50">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl text-foreground">Bienvenido</CardTitle>
-            <CardDescription>
-              Ingresa a tu cuenta o crea una nueva para comenzar
+        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Volver al inicio
+        </Link>
+        
+        <Card>
+          <CardHeader className="space-y-1">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center">
+                <span className="text-2xl">🐝</span>
+              </div>
+            </div>
+            <CardTitle className="text-2xl text-center">
+              {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {isLogin
+                ? 'Ingresa tus credenciales para acceder a tu cuenta'
+                : 'Crea una nueva cuenta para empezar'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="register">Registrarse</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleSignIn)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="tu@email.com" 
-                              type="email"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contraseña</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="••••••••" 
-                              type="password"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            <form onSubmit={handleAuth} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-primary hover:bg-primary-dark text-secondary font-semibold"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Iniciando sesión...
-                        </>
-                      ) : (
-                        'Iniciar Sesión'
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleSignUp)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="tu@email.com" 
-                              type="email"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contraseña</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="••••••••" 
-                              type="password"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                    minLength={8}
+                  />
+                </div>
+                {!isLogin && (
+                  <p className="text-xs text-muted-foreground">
+                    La contraseña debe tener al menos 8 caracteres
+                  </p>
+                )}
+              </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-primary hover:bg-primary-dark text-secondary font-semibold"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Registrando...
-                        </>
-                      ) : (
-                        'Crear Cuenta'
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-            </Tabs>
-
-            <div className="mt-6 text-center">
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate('/')}
-                className="text-muted-foreground hover:text-foreground"
+              <Button
+                type="submit"
+                className="w-full bg-gradient-primary text-secondary hover:shadow-hive"
+                disabled={loading}
               >
-                ← Volver al inicio
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
               </Button>
-            </div>
+
+              <div className="text-center text-sm">
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-primary hover:underline"
+                >
+                  {isLogin
+                    ? '¿No tienes cuenta? Regístrate'
+                    : '¿Ya tienes cuenta? Inicia sesión'}
+                </button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>

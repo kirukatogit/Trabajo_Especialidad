@@ -33,7 +33,7 @@ const Header = () => {
             <Link to="/auth">Iniciar Sesión</Link>
           </Button>
           <Button variant="hero" asChild>
-            <Link to="/auth">Registrarse</Link>
+            <Link to="/auth">Comenzar</Link>
           </Button>
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-5 w-5" />
