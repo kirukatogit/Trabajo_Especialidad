@@ -1,19 +1,27 @@
 from flask import Flask, send_from_directory
 import os
+from pathlib import Path
 
-app = Flask(__name__, static_folder="frontend/dist", static_url_path="")
+# Servir la carpeta 'src' que está en la raíz del proyecto
+app = Flask(__name__, static_folder="src", static_url_path="/static")
 
 @app.route("/")
 def index():
-    return send_from_directory(app.static_folder, "index.html")
+    index_path = Path(app.static_folder) / "index.html"
+    if index_path.exists():
+        return send_from_directory(app.static_folder, "index.html")
+    return "Frontend no encontrado (fallback). API en /api"
 
 @app.route("/<path:path>")
-def static_files(path):
-    file_path = os.path.join(app.static_folder, path)
-    if os.path.exists(file_path):
+def catch_all(path):
+    # Si el archivo solicitado existe en src, servirlo; si no, devolver index.html (SPA)
+    file_path = Path(app.static_folder) / path
+    if file_path.exists():
         return send_from_directory(app.static_folder, path)
-    else:
+    index_path = Path(app.static_folder) / "index.html"
+    if index_path.exists():
         return send_from_directory(app.static_folder, "index.html")
+    return "Frontend no encontrado (fallback)"
 
 @app.route("/api")
 def api():
