@@ -8,7 +8,7 @@ COPY package*.json ./
 COPY bun.lockb* ./
 
 # Install dependencies
-RUN npm ci
+RUN npm ci  
 
 # Copy source code
 COPY . .
