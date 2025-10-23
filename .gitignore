@@ -22,3 +22,29 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sistema / IDE
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Entornos y secretos
+.env
+*.env
+.env.local
+.env.*.local
+secrets/
+*.key
+*.pem
+
+# Lenguajes / paquetes comunes
+node_modules/
+dist/
+build/
+__pycache__/
+venv/
+.venv/
+
+# Otros
+*.log
+*.sqlite
